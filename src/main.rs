@@ -8,8 +8,8 @@ use ratatui::{
         Constraint,
         Layout 
     },
-    style::{ Color },
-    widgets::{ Block, BorderType, Borders, List, Paragraph, Widget },
+    style::{ Color, Stylize },
+    widgets::{ Block, BorderType, List, Paragraph, Widget },
     DefaultTerminal, Frame
 };
 
@@ -57,9 +57,9 @@ fn render(frame: &mut Frame, app_state: &AppState) {
 
     Block::bordered()
         .border_type(BorderType::Rounded)
-        // .fg(Color::Yellow)
+        .fg(Color::Yellow)
         .render(border_area, frame.buffer_mut());
 
-    Paragraph::new("Hello from application")
-        .render(frame.area(), frame.buffer_mut());
+    // Paragraph::new("Hello from application")
+    //     .render(frame.area(), frame.buffer_mut());
 }
