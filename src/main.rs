@@ -1,15 +1,14 @@
 use color_eyre::eyre::{ Ok, Result };
 use ratatui::{ 
     crossterm::{
-        event::{ self, Event },
-        // terminal,
+        event::{ self, Event, KeyEvent },
     }, 
     layout::{ 
         Constraint,
         Layout 
     },
     style::{ Color, Style, Stylize },
-    widgets::{ Block, BorderType, List, ListItem, ListState, Paragraph, Widget },
+    widgets::{ Block, BorderType, List, ListItem, ListState, Paragraph, Widget, Padding },
     DefaultTerminal, Frame
 };
 
@@ -17,6 +16,8 @@ use ratatui::{
 struct AppState {
     items: Vec<TodoItem>,
     list_state: ListState,
+    is_add_new: bool,
+    input_value: String,
 }
 
 #[derive(Debug, Default)]
@@ -29,7 +30,7 @@ fn main() -> Result<()> {
     let mut state = AppState::default();
     
     // seed TODOs
-    for i in 0..2 {
+    for i in 0..5 {
         state.items.push(TodoItem{
             is_done: false,
             description: format!("Thing {}", i),
@@ -52,26 +53,66 @@ fn run(mut terminal: DefaultTerminal, app_state: &mut AppState) -> Result<()> {
         terminal.draw(|f| render(f, app_state));
         // input handling
         if let Event::Key(key) = event::read()? {
-            match key.code {
-                event::KeyCode::Esc => {
+            if app_state.is_add_new {
+                if handle_add_new(key, app_state) {
+                    app_state.is_add_new = false;
+                }
+            } else {
+                if handle_key(key, app_state) {
                     break;
-                },
-                event::KeyCode::Char(char) => {
-                    match char {
-                        'k' => {
-                            app_state.list_state.select_previous();
-                        },
-                        'j' => {
-                            app_state.list_state.select_next();
-                        },
-                        _ => {}
-                    }
-                },
-                _ => {}
+                }
             }
         }
     }    
     Ok(())
+}
+
+fn handle_add_new(key: KeyEvent, app_state: &mut AppState) -> bool {
+    match key.code {
+        event::KeyCode::Char(c) => {
+            app_state.input_value.push(c);
+        },
+        event::KeyCode::Backspace => {
+            app_state.input_value.pop();
+        },
+        event::KeyCode::Enter => {
+            return true;
+        },
+        event::KeyCode::Esc => {
+            return true;
+        },
+        _ => {}
+    }
+    false
+}
+
+fn handle_key(key: KeyEvent, app_state: &mut AppState) -> bool {
+    match key.code {
+        event::KeyCode::Esc => {
+            return true;
+        },
+        event::KeyCode::Char(char) => {
+            match char {
+                'A' => {
+                    app_state.is_add_new = true;
+                },
+                'D' => {
+                    if let Some(index) = app_state.list_state.selected() {
+                        app_state.items.remove(index);
+                    }
+                },
+                'k' => {
+                    app_state.list_state.select_previous();
+                },
+                'j' => {
+                    app_state.list_state.select_next();
+                },
+                _ => {}
+            }
+        },
+        _ => {}
+    }
+    false
 }
 
 fn render(frame: &mut Frame, app_state: &mut AppState) {
@@ -92,13 +133,25 @@ fn render(frame: &mut Frame, app_state: &mut AppState) {
         app_state
             .items
             .iter()
-            .map(|x| ListItem::from(x.description.clone()))
+            .map(|x| ListItem::from(x.description.as_str()))
     )
         .highlight_symbol(">")
         .highlight_style(Style::default().fg(Color::Green));
 
-    frame.render_stateful_widget(list, inner_area, &mut app_state.list_state)
+    frame.render_stateful_widget(list, inner_area, &mut app_state.list_state);
 
-    // Paragraph::new("Hello from application")
-    //     .render(frame.area(), frame.buffer_mut());
+    if app_state.is_add_new {
+        if app_state.is_add_new {
+            Paragraph::new(app_state.input_value.as_str())
+                .block(
+                    Block::bordered()
+                        .fg(Color::Green)
+                        .padding(Padding::uniform(1))
+                        .border_type(BorderType::Rounded)
+                )
+                .render(frame.area(), frame.buffer_mut());
+        } else {
+            
+        }
+    }
 }
